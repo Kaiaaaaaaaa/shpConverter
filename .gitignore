@@ -1,4 +1,4 @@
-\Files2Convert\*
-\ConvertedDXF2SHP\*
-\ConvertedSHP2DXF\*
-venv
+Files2Convert/*
+ConvertedDXF2SHP/*
+ConvertedSHP2DXF/*
+venv/
