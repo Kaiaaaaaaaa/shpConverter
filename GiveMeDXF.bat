@@ -1,5 +1,5 @@
 call .\venv\Scripts\activate
-python .\shpConverter.py
+python .\shp2dxf.py
 deactivate
 echo %input%
 pause
