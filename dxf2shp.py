@@ -121,11 +121,9 @@ class WriterSet:
         # Attributes
         w.field("layer", "C", size=64)
         w.field("etype", "C", size=16)
-        w.field("handle", "C", size=16)
+        # Removed handle field
         # GIS-common color storage
-        w.field("R", "N", size=3, decimal=0)
-        w.field("G", "N", size=3, decimal=0)
-        w.field("B", "N", size=3, decimal=0)
+        w.field("RGB_text", "C", size=16)
         setattr(self, kind, w)
         return w
 
@@ -179,21 +177,21 @@ def convert_one_dxf(dxf_path: str, out_dir: str) -> None:
     for e in entities:
         et = e.dxftype()
         layer = getattr(e.dxf, "layer", "")
-        handle = getattr(e.dxf, "handle", "")
         R, G, B = entity_rgb(e)
+        rgb_text = f"rgb({R},{G},{B})"
 
         if et == "POINT":
             x, y = get_point_xy(e)
             w = writers.get("points")
             w.point(x, y)
-            w.record(layer, et, handle, R, G, B)
+            w.record(layer, et, rgb_text)
             writers.counts["points"] += 1
 
         elif et == "LINE":
             (x1, y1), (x2, y2) = get_line_xy(e)
             w = writers.get("lines")
             w.line([[(x1, y1), (x2, y2)]])
-            w.record(layer, et, handle, R, G, B)
+            w.record(layer, et, rgb_text)
             writers.counts["lines"] += 1
 
         elif et == "LWPOLYLINE":
@@ -201,12 +199,12 @@ def convert_one_dxf(dxf_path: str, out_dir: str) -> None:
             if is_closed(e) and len(pts) >= 3:
                 w = writers.get("polygons")
                 w.poly([close_if_needed(pts)])
-                w.record(layer, et, handle, R, G, B)
+                w.record(layer, et, rgb_text)
                 writers.counts["polygons"] += 1
             else:
                 w = writers.get("lines")
                 w.line([pts])
-                w.record(layer, et, handle, R, G, B)
+                w.record(layer, et, rgb_text)
                 writers.counts["lines"] += 1
 
         elif et == "POLYLINE":
@@ -214,12 +212,12 @@ def convert_one_dxf(dxf_path: str, out_dir: str) -> None:
             if is_closed(e) and len(pts) >= 3:
                 w = writers.get("polygons")
                 w.poly([close_if_needed(pts)])
-                w.record(layer, et, handle, R, G, B)
+                w.record(layer, et, rgb_text)
                 writers.counts["polygons"] += 1
             else:
                 w = writers.get("lines")
                 w.line([pts])
-                w.record(layer, et, handle, R, G, B)
+                w.record(layer, et, rgb_text)
                 writers.counts["lines"] += 1
 
     writers.close_all()

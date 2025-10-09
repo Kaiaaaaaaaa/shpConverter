@@ -31,14 +31,29 @@ def _parse_rgb_from_record(rec, field_names_lower):
     """
     Extract (R,G,B) from a record using common GIS conventions.
     Priority:
-        1) Integer fields R,G,B
-        2) 'color' hex '#RRGGBB' or 'RRGGBB'
-        3) 'color' as 'r,g,b' (any case, with spaces)
-        4) 'aci' (AutoCAD Color Index)
+        1) 'RGB_text' column as 'rgb(R,G,B)'
+        2) Integer fields R,G,B
+        3) 'color' hex '#RRGGBB' or 'RRGGBB'
+        4) 'color' as 'r,g,b' (any case, with spaces)
+        5) 'aci' (AutoCAD Color Index)
     Returns (R,G,B) ints in 0..255; defaults to (0,0,0) if not found/invalid.
     """
     name_to_idx = {n: i for i, n in enumerate(field_names_lower)}
-    # Helper to get a value by candidate field names (case-insensitive)
+    # 1) RGB_text column
+    rgb_text_idx = name_to_idx.get("rgb_text")
+    if rgb_text_idx is not None:
+        val = rec[rgb_text_idx]
+        if isinstance(val, str) and val.lower().startswith("rgb(") and val.endswith(")"):
+            try:
+                parts = val[4:-1].split(",")
+                if len(parts) == 3:
+                    R, G, B = int(parts[0]), int(parts[1]), int(parts[2])
+                    if 0 <= R <= 255 and 0 <= G <= 255 and 0 <= B <= 255:
+                        return R, G, B
+            except Exception:
+                pass
+
+    # 2) R,G,B integer columns
     def get_val(*candidates):
         for c in candidates:
             idx = name_to_idx.get(c.lower())
@@ -46,7 +61,6 @@ def _parse_rgb_from_record(rec, field_names_lower):
                 return rec[idx]
         return None
 
-    # 1) R,G,B integer columns
     r = get_val("r")
     g = get_val("g")
     b = get_val("b")
@@ -60,7 +74,7 @@ def _parse_rgb_from_record(rec, field_names_lower):
     except Exception:
         pass
 
-    # 2/3) color string field
+    # 3/4) color string field
     color_val = get_val("color", "colour", "clr")
     if isinstance(color_val, str):
         s = color_val.strip()
@@ -85,7 +99,7 @@ def _parse_rgb_from_record(rec, field_names_lower):
             except Exception:
                 pass
 
-    # 4) ACI -> RGB
+    # 5) ACI -> RGB
     aci_val = get_val("aci", "autocadcolorindex")
     try:
         if aci_val is not None:
